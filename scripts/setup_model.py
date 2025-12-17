@@ -20,6 +20,12 @@ MODEL_CONFIGS = {
         "load_in_4bit": False,
         "lora_r": 32,
     },
+    "llama3-8b": {
+        "name": "unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit",
+        "max_seq_length": 2048,
+        "load_in_4bit": False,
+        "lora_r": 32,
+    },
     "gemma-7b": {
         "name": "unsloth/gemma-7b-bnb-4bit",
         "max_seq_length": 2048,
@@ -32,19 +38,20 @@ MODEL_CONFIGS = {
         "load_in_4bit": True,
         "lora_r": 16,
     },
-    "phi-2": {
-        "name": "microsoft/phi-2",
+    "qwen2-7b": {
+        "name": "unsloth/Qwen2.5-7B-Instruct-bnb-4bit",
         "max_seq_length": 2048,
-        "load_in_4bit": True,
-        "lora_r": 16,
+        "load_in_4bit": False,
+        "lora_r": 32,
     },
 }
 
 OLLAMA_MODELS = {
     "mistral": "mistral:7b-instruct-q4_0",
     "llama2": "llama2:7b-chat-q4_0",
-    "gemma": "gemma:2b",
-    "phi": "phi:medium",
+    "llama3": "llama3.1:8b-instruct-q4_0",
+    "gemma": "gemma:7b",
+    "qwen2": "qwen2.5:7b-instruct-q4_0",
 }
 
 
@@ -154,8 +161,8 @@ def main():
         print("1. Prepare your training data in JSONL format")
         print("2. Run training:")
         print("   python3 scripts/finetune.py \\")
-        print("     --data /workspace/data/sample_finetune.jsonl \\")
-        print("     --output /workspace/models/finetuned")
+        print("     --data /workspace/work/data/sample_finetune.jsonl \\")
+        print("     --output /workspace/work/models/finetuned")
         
     except torch.cuda.OutOfMemoryError:
         print("\n❌ Out of Memory Error!")

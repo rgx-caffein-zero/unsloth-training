@@ -115,16 +115,17 @@ def main():
     for key, value in settings.items():
         print(f"  {key}: {value}")
     
-    save_config(settings, "/workspace/training_config.json")
+    save_config(settings, "/workspace/work/training_config.json")
     
     print("\n=== Quick Start Commands ===")
     print("\n1. Setup model:")
-    print(f"   python3 scripts/setup_model.py --model-type {settings['model'].split('/')[-1].split('-')[0]}")
+    model_key = settings['model'].split('/')[-1].split('-')[0]
+    print(f"   python3 scripts/setup_model.py --model-type {model_key}")
     
     print("\n2. Run finetuning:")
     print("   python3 scripts/finetune.py \\")
     print(f"     --model {settings['model']} \\")
-    print("     --data /workspace/data/sample_finetune.jsonl \\")
+    print("     --data /workspace/work/data/sample_finetune.jsonl \\")
     print(f"     --max-seq-length {settings['max_seq_length']} \\")
     print(f"     --batch-size {settings['batch_size']} \\")
     print("     --epochs 3")

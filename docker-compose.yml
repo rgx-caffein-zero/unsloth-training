@@ -4,33 +4,26 @@ services:
   ollama-unsloth:
     build: .
     container_name: ollama-unsloth-training
-    runtime: nvidia
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
+      - JUPYTER_PASSWORD=unsloth
+      - JUPYTER_PORT=8888
+      - USER_PASSWORD=unsloth2024
       - OLLAMA_HOST=0.0.0.0
-      - OLLAMA_MODELS=/workspace/models/ollama
-      - OLLAMA_MAX_LOADED_MODELS=1
-      - CUDA_VISIBLE_DEVICES=0
-      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128,expandable_segments:True
-      - TRANSFORMERS_CACHE=/workspace/models/cache
-      - HF_HOME=/workspace/models/huggingface
+      - OLLAMA_MODELS=/workspace/work/models/ollama
     volumes:
-      - ./data:/workspace/data
-      - ./models:/workspace/models
-      - ./scripts:/workspace/scripts
-      - ./notebooks:/workspace/notebooks
-      - ollama-data:/root/.ollama
+      - ./data:/workspace/work/data
+      - ./models:/workspace/work/models
+      - ./scripts:/workspace/work/scripts
+      - ./notebooks:/workspace/work/notebooks
     ports:
-      - "11434:11434"
-      - "8888:8888"
+      - "11434:11434"  # Ollama API
+      - "8888:8888"    # Jupyter Lab
+      - "2222:22"      # SSH
     shm_size: '8gb'
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              count: all
               capabilities: [gpu]
-
-volumes:
-  ollama-data:

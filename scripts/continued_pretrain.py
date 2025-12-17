@@ -91,7 +91,7 @@ def prepare_pretraining_dataset(data_path: str, tokenizer, max_seq_length: int =
 
 
 def continued_pretrain(model, tokenizer, dataset,
-                       output_dir: str = "/workspace/models/continued_pretrained"):
+                       output_dir: str = "/workspace/work/models/continued_pretrained"):
     """継続事前学習の実行"""
     os.makedirs(output_dir, exist_ok=True)
     
@@ -167,7 +167,7 @@ def main():
     parser.add_argument("--data", type=str, required=True,
                         help="Path to pre-training data")
     parser.add_argument("--output", type=str,
-                        default="/workspace/models/continued_pretrained",
+                        default="/workspace/work/models/continued_pretrained",
                         help="Output directory")
     parser.add_argument("--max-seq-length", type=int, default=2048,
                         help="Maximum sequence length")

@@ -119,7 +119,7 @@ def prepare_dataset(data_path: str, tokenizer, max_seq_length: int = 2048):
 
 
 def train(model, tokenizer, dataset,
-          output_dir: str = "/workspace/models/finetuned",
+          output_dir: str = "/workspace/work/models/finetuned",
           batch_size_override: int = None,
           epochs: int = 3):
     """訓練実行"""
@@ -203,7 +203,7 @@ def main():
     parser.add_argument("--data", type=str, required=True,
                         help="Path to training data")
     parser.add_argument("--output", type=str,
-                        default="/workspace/models/finetuned",
+                        default="/workspace/work/models/finetuned",
                         help="Output directory")
     parser.add_argument("--max-seq-length", type=int, default=2048,
                         help="Maximum sequence length")
