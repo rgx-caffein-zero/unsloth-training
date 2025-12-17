@@ -10,12 +10,10 @@ services:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_MODELS=/workspace/models/ollama
       - OLLAMA_MAX_LOADED_MODELS=1
-      - OLLAMA_GPU_OVERHEAD=268435456  # 256MB reserved (10.8GB用に削減)
       - CUDA_VISIBLE_DEVICES=0
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128,expandable_segments:True
       - TRANSFORMERS_CACHE=/workspace/models/cache
       - HF_HOME=/workspace/models/huggingface
-      - VRAM_LIMIT=10  # 10.8GB VRAM明示
     volumes:
       - ./data:/workspace/data
       - ./models:/workspace/models
@@ -25,7 +23,7 @@ services:
     ports:
       - "11434:11434"
       - "8888:8888"
-    shm_size: '6gb'  # 10.8GB用に削減
+    shm_size: '8gb'
     deploy:
       resources:
         reservations:
@@ -33,8 +31,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-        limits:
-          memory: 20g  # システムRAM上限
 
 volumes:
   ollama-data:
