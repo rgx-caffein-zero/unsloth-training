@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Ollamaモデルディレクトリの作成と権限設定
+if [ -n "$OLLAMA_MODELS" ]; then
+    echo "$USER_PASSWORD" | sudo -S mkdir -p "$OLLAMA_MODELS" 2>/dev/null
+    echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth "$(dirname "$OLLAMA_MODELS")" 2>/dev/null
+fi
+
+# 作業ディレクトリの権限設定（マウントされたディレクトリ用）
+echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/models 2>/dev/null
+echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/data 2>/dev/null
+echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/notebooks 2>/dev/null
+
+# Unslothコンパイルキャッシュ用ディレクトリの作成
+mkdir -p /workspace/work/unsloth_compiled_cache 2>/dev/null
+echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/unsloth_compiled_cache 2>/dev/null
+
 # Ollamaサービスをバックグラウンドで起動
 ollama serve &
 

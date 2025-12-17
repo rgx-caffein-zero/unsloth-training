@@ -10,6 +10,10 @@ services:
       - USER_PASSWORD=unsloth2024
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_MODELS=/workspace/work/models/ollama
+      # Unsloth関連
+      - UNSLOTH_COMPILE_CACHE=/tmp/unsloth_compiled_cache
+      - HF_HOME=/workspace/work/models/huggingface
+      - TRANSFORMERS_CACHE=/workspace/work/models/huggingface
     volumes:
       - ./data:/workspace/work/data
       - ./models:/workspace/work/models

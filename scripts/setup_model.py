@@ -1,11 +1,18 @@
 """
 モデルセットアップスクリプト
 """
+import os
+
+# Unslothキャッシュディレクトリを設定（権限問題を回避）
+os.environ["UNSLOTH_COMPILE_CACHE"] = "/tmp/unsloth_compiled_cache"
+
+# Unslothを最初にインポート（最適化のため必須）
+from unsloth import FastLanguageModel
+
 import subprocess
 import argparse
 import torch
 import gc
-from unsloth import FastLanguageModel
 
 MODEL_CONFIGS = {
     "mistral-7b": {

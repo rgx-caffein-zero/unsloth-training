@@ -2,16 +2,22 @@
 ファインチューニングスクリプト
 """
 import os
+
+# Unslothキャッシュディレクトリを設定（権限問題を回避）
+os.environ["UNSLOTH_COMPILE_CACHE"] = "/tmp/unsloth_compiled_cache"
+
+# Unslothを最初にインポート（最適化のため必須）
+from unsloth import FastLanguageModel
+
 import argparse
 import torch
 import gc
-from datasets import load_dataset
-from transformers import TrainingArguments
-from trl import SFTTrainer
-from unsloth import FastLanguageModel
 import warnings
 
 warnings.filterwarnings("ignore")
+
+from datasets import load_dataset
+from trl import SFTTrainer, SFTConfig
 
 ALPACA_PROMPT = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
@@ -140,7 +146,8 @@ def train(model, tokenizer, dataset,
     print(f"  Dataset size: {len(dataset)} samples")
     print("=" * 50)
     
-    training_args = TrainingArguments(
+    # SFTConfigを使用（新しいtrl API）
+    sft_config = SFTConfig(
         output_dir=output_dir,
         num_train_epochs=epochs,
         per_device_train_batch_size=batch_size,
@@ -148,6 +155,7 @@ def train(model, tokenizer, dataset,
         warmup_steps=20,
         learning_rate=2e-4,
         fp16=True,
+        bf16=False,
         logging_steps=10,
         optim="paged_adamw_8bit",
         weight_decay=0.01,
@@ -158,20 +166,20 @@ def train(model, tokenizer, dataset,
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         max_grad_norm=0.3,
-        report_to="tensorboard",
+        report_to="none",
         logging_dir=f"{output_dir}/logs",
         dataloader_num_workers=2,
+        max_seq_length=config['max_seq'],
+        dataset_text_field="text",
+        packing=True,
+        dataset_num_proc=2,
     )
     
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         train_dataset=dataset,
-        dataset_text_field="text",
-        max_seq_length=config['max_seq'],
-        dataset_num_proc=2,
-        packing=True,
-        args=training_args,
+        args=sft_config,
     )
     
     try:
