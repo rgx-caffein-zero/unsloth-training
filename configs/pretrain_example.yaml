@@ -1,0 +1,192 @@
+# =============================================================================
+# 継続事前学習設定ファイル
+# =============================================================================
+# 使用方法: python3 scripts/train.py --config configs/pretrain_example.yaml
+# =============================================================================
+
+# 学習タイプ: "finetune" または "pretrain"
+training_type: pretrain
+
+# 説明（任意）
+description: "Sample continued pre-training configuration"
+
+# 乱数シード
+seed: 3407
+
+# =============================================================================
+# モデル設定
+# =============================================================================
+model:
+  # ベースモデル名
+  # 継続事前学習には非量子化モデルまたは量子化モデルを使用可能
+  # 例:
+  #   - unsloth/llama-2-7b
+  #   - unsloth/llama-2-7b-bnb-4bit
+  #   - unsloth/mistral-7b
+  name: unsloth/llama-2-7b
+  
+  # 最大シーケンス長
+  max_seq_length: 2048
+  
+  # 4bit量子化
+  load_in_4bit: true
+  
+  # データ型
+  dtype: float16
+  
+  # デバイスマッピング
+  device_map: auto
+  
+  # カスタムコードの信頼
+  trust_remote_code: true
+
+# =============================================================================
+# LoRA設定
+# =============================================================================
+lora:
+  # LoRAランク（継続事前学習では大きめの値を推奨）
+  r: 32
+  
+  # LoRAアルファ
+  lora_alpha: 32
+  
+  # LoRAドロップアウト（継続事前学習では0を推奨）
+  lora_dropout: 0
+  
+  # バイアス
+  bias: none
+  
+  # ターゲットモジュール
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  
+  # Gradient Checkpointing
+  use_gradient_checkpointing: unsloth
+  
+  # 乱数シード
+  random_state: 3407
+
+# =============================================================================
+# 訓練設定
+# =============================================================================
+training:
+  # エポック数（継続事前学習では通常1エポック）
+  num_train_epochs: 1
+  
+  # 最大ステップ数（継続事前学習ではステップ数で制御することが多い）
+  max_steps: 1000
+  
+  # デバイスあたりのバッチサイズ
+  per_device_train_batch_size: 2
+  
+  # 勾配累積ステップ数
+  gradient_accumulation_steps: 4
+  
+  # 学習率（継続事前学習では小さめの値を推奨）
+  learning_rate: 5.0e-5
+  
+  # ウォームアップステップ数
+  warmup_steps: 100
+  
+  # 学習率スケジューラ
+  lr_scheduler_type: cosine
+  
+  # 重み減衰
+  weight_decay: 0.01
+  
+  # 勾配クリッピング
+  max_grad_norm: 1.0
+  
+  # FP16訓練
+  fp16: true
+  bf16: false
+  
+  # オプティマイザ
+  optim: paged_adamw_8bit
+  
+  # Gradient Checkpointing
+  gradient_checkpointing: true
+  
+  # パッキング（継続事前学習では有効推奨）
+  packing: true
+  
+  # データ処理の並列数
+  dataset_num_proc: 2
+  dataloader_num_workers: 2
+  
+  # 保存設定
+  save_strategy: steps
+  save_steps: 200
+  save_total_limit: 2
+  
+  # ログ設定
+  logging_steps: 20
+  report_to: none
+
+# =============================================================================
+# データ設定
+# =============================================================================
+data:
+  # 訓練データのパス
+  # サポート形式:
+  #   - .txt: 段落を空行で区切ったプレーンテキスト
+  #   - .jsonl: {"text": "..."} 形式のJSONL
+  train_data_path: /workspace/work/data/pretrain_data.txt
+  
+  # 検証データのパス（任意）
+  validation_data_path: null
+  
+  # テキストフィールド名
+  text_field: text
+  
+  # 以下はファインチューニング用設定（継続事前学習では不使用）
+  instruction_field: instruction
+  input_field: input
+  output_field: output
+  prompt_template: alpaca
+
+# =============================================================================
+# 出力設定
+# =============================================================================
+output:
+  # 出力ディレクトリ
+  output_dir: /workspace/work/models/continued_pretrained
+  
+  # マージされたモデルを保存するか
+  save_merged_model: true
+  
+  # 保存方法
+  save_method: merged_16bit
+  
+  # ログファイル名
+  log_file: training.log
+
+# =============================================================================
+# MLflow設定
+# =============================================================================
+mlflow:
+  # MLflowを有効にするか
+  enabled: true
+  
+  # トラッキングURI
+  tracking_uri: file:///workspace/work/mlruns
+  
+  # 実験名
+  experiment_name: unsloth-pretraining
+  
+  # 実行名（nullで自動生成）
+  run_name: null
+  
+  # タグ
+  tags:
+    project: ollama-unsloth-training
+    type: continued-pretraining
+  
+  # モデルをログするか
+  log_model: false

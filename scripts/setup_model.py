@@ -164,12 +164,15 @@ def main():
         print(f"\nInitializing model: {args.model_type}")
         model, tokenizer = prepare_model(args.model_type)
         
-        print("\n=== Next Steps ===")
-        print("1. Prepare your training data in JSONL format")
-        print("2. Run training:")
-        print("   python3 scripts/finetune.py \\")
-        print("     --data /workspace/work/data/sample_finetune.jsonl \\")
-        print("     --output /workspace/work/models/finetuned")
+        print("\n=== Next Steps (New Method) ===")
+        print("1. Copy and edit the configuration file:")
+        print("   cp configs/finetune_example.yaml configs/my_config.yaml")
+        print("")
+        print("2. Run training with the config file:")
+        print("   python3 scripts/train.py --config configs/my_config.yaml")
+        print("")
+        print("3. Or use auto GPU optimization:")
+        print("   python3 scripts/train.py --config configs/my_config.yaml --auto-optimize")
         
     except torch.cuda.OutOfMemoryError:
         print("\n❌ Out of Memory Error!")

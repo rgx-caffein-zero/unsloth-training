@@ -10,6 +10,8 @@ fi
 echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/models 2>/dev/null
 echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/data 2>/dev/null
 echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/notebooks 2>/dev/null
+echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/configs 2>/dev/null
+echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/mlruns 2>/dev/null
 
 # Unslothコンパイルキャッシュ用ディレクトリの作成
 mkdir -p /workspace/work/unsloth_compiled_cache 2>/dev/null
@@ -20,6 +22,9 @@ ollama serve &
 
 # Ollamaが起動するまで待機
 sleep 3
+
+# MLflow UIをバックグラウンドで起動
+mlflow ui --host 0.0.0.0 --port 5000 --backend-store-uri file:///workspace/work/mlruns &
 
 # 引数がある場合はそれを実行
 if [ $# -gt 0 ]; then

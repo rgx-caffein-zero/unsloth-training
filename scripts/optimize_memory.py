@@ -117,23 +117,20 @@ def main():
     
     save_config(settings, "/workspace/work/training_config.json")
     
-    print("\n=== Quick Start Commands ===")
-    print("\n1. Setup model:")
-    model_key = settings['model'].split('/')[-1].split('-')[0]
-    print(f"   python3 scripts/setup_model.py --model-type {model_key}")
+    print("\n=== Quick Start Commands (New Method) ===")
+    print("\n1. Using configuration file (recommended):")
+    print("   # Edit the config file as needed")
+    print("   cp configs/finetune_example.yaml configs/my_config.yaml")
+    print("   python3 scripts/train.py --config configs/my_config.yaml")
     
-    print("\n2. Run finetuning:")
-    print("   python3 scripts/finetune.py \\")
-    print(f"     --model {settings['model']} \\")
-    print("     --data /workspace/work/data/sample_finetune.jsonl \\")
-    print(f"     --max-seq-length {settings['max_seq_length']} \\")
-    print(f"     --batch-size {settings['batch_size']} \\")
-    print("     --epochs 3")
+    print("\n2. With auto GPU optimization:")
+    print("   python3 scripts/train.py --config configs/finetune_example.yaml --auto-optimize")
     
     print("\n=== Tips ===")
     print("  • Monitor GPU usage: watch -n 1 nvidia-smi")
-    print("  • If OOM occurs, reduce batch_size or max_seq_length")
+    print("  • If OOM occurs, reduce batch_size or max_seq_length in config")
     print("  • Close other GPU applications before training")
+    print("  • Check MLflow UI at http://localhost:5000")
 
 
 if __name__ == "__main__":

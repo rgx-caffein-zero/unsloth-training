@@ -1,0 +1,196 @@
+# =============================================================================
+# ファインチューニング設定ファイル
+# =============================================================================
+# 使用方法: python3 scripts/train.py --config configs/finetune_example.yaml
+# =============================================================================
+
+# 学習タイプ: "finetune" または "pretrain"
+training_type: finetune
+
+# 説明（任意）
+description: "Sample finetuning configuration"
+
+# 乱数シード
+seed: 3407
+
+# =============================================================================
+# モデル設定
+# =============================================================================
+model:
+  # モデル名（Hugging Face Hub または ローカルパス）
+  # 利用可能なUnslothモデル:
+  #   - unsloth/mistral-7b-instruct-v0.2-bnb-4bit
+  #   - unsloth/llama-2-7b-chat-bnb-4bit
+  #   - unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit
+  #   - unsloth/gemma-7b-bnb-4bit
+  #   - unsloth/gemma-2b
+  #   - unsloth/Qwen2.5-7B-Instruct-bnb-4bit
+  name: unsloth/gemma-2b
+  
+  # 最大シーケンス長
+  max_seq_length: 2048
+  
+  # 4bit量子化（"bnb-4bit"モデルの場合はFalse）
+  load_in_4bit: false
+  
+  # データ型
+  dtype: float16
+  
+  # デバイスマッピング
+  device_map: auto
+  
+  # カスタムコードの信頼
+  trust_remote_code: true
+
+# =============================================================================
+# LoRA設定
+# =============================================================================
+lora:
+  # LoRAランク
+  r: 32
+  
+  # LoRAアルファ
+  lora_alpha: 32
+  
+  # LoRAドロップアウト
+  lora_dropout: 0.05
+  
+  # バイアス
+  bias: none
+  
+  # ターゲットモジュール
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  
+  # Gradient Checkpointing
+  use_gradient_checkpointing: unsloth
+  
+  # 乱数シード
+  random_state: 3407
+
+# =============================================================================
+# 訓練設定
+# =============================================================================
+training:
+  # エポック数
+  num_train_epochs: 3
+  
+  # 最大ステップ数（-1で無効）
+  max_steps: -1
+  
+  # デバイスあたりのバッチサイズ
+  # VRAM 8GB: 1, 12GB: 1-2, 16GB: 2, 24GB+: 4
+  per_device_train_batch_size: 2
+  
+  # 勾配累積ステップ数
+  gradient_accumulation_steps: 4
+  
+  # 学習率
+  learning_rate: 2.0e-4
+  
+  # ウォームアップステップ数
+  warmup_steps: 20
+  
+  # 学習率スケジューラ
+  lr_scheduler_type: cosine
+  
+  # 重み減衰
+  weight_decay: 0.01
+  
+  # 勾配クリッピング
+  max_grad_norm: 0.3
+  
+  # FP16訓練
+  fp16: true
+  bf16: false
+  
+  # オプティマイザ
+  optim: paged_adamw_8bit
+  
+  # Gradient Checkpointing
+  gradient_checkpointing: true
+  
+  # パッキング（効率的なバッチ処理）
+  packing: true
+  
+  # データ処理の並列数
+  dataset_num_proc: 2
+  dataloader_num_workers: 2
+  
+  # 保存設定
+  save_strategy: epoch  # "epoch", "steps", "no"
+  save_steps: 200
+  save_total_limit: 2
+  
+  # ログ設定
+  logging_steps: 10
+  report_to: none  # "none", "tensorboard", "wandb"
+
+# =============================================================================
+# データ設定
+# =============================================================================
+data:
+  # 訓練データのパス（JSONL形式）
+  train_data_path: /workspace/work/data/sample_finetune.jsonl
+  
+  # 検証データのパス（任意）
+  validation_data_path: null
+  
+  # テキストフィールド名
+  text_field: text
+  
+  # JSONL内のフィールド名（ファインチューニング用）
+  instruction_field: instruction
+  input_field: input
+  output_field: output
+  
+  # プロンプトテンプレート
+  # 利用可能: "alpaca", "alpaca_no_input", "chatml", "llama3"
+  prompt_template: alpaca
+
+# =============================================================================
+# 出力設定
+# =============================================================================
+output:
+  # 出力ディレクトリ
+  output_dir: /workspace/work/models/finetuned
+  
+  # マージされたモデルを保存するか
+  save_merged_model: true
+  
+  # 保存方法
+  # "merged_16bit", "merged_4bit", "lora"
+  save_method: merged_16bit
+  
+  # ログファイル名
+  log_file: training.log
+
+# =============================================================================
+# MLflow設定
+# =============================================================================
+mlflow:
+  # MLflowを有効にするか
+  enabled: true
+  
+  # トラッキングURI
+  tracking_uri: file:///workspace/work/mlruns
+  
+  # 実験名
+  experiment_name: unsloth-finetuning
+  
+  # 実行名（nullで自動生成）
+  run_name: null
+  
+  # タグ
+  tags:
+    project: ollama-unsloth-training
+    type: finetuning
+  
+  # モデルをログするか
+  log_model: false
