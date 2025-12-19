@@ -25,7 +25,7 @@ model:
   #   - unsloth/gemma-7b-bnb-4bit
   #   - unsloth/gemma-2b
   #   - unsloth/Qwen2.5-7B-Instruct-bnb-4bit
-  name: unsloth/mistral-7b-instruct-v0.2-bnb-4bit
+  name: unsloth/gemma-2b
   
   # 最大シーケンス長
   max_seq_length: 2048
