@@ -5,7 +5,6 @@ services:
     build: .
     container_name: ollama-unsloth-training
     environment:
-      - PYTHONDONTWRITEBYTECODE=1
       - JUPYTER_PASSWORD=unsloth
       - JUPYTER_PORT=8888
       - USER_PASSWORD=unsloth2024

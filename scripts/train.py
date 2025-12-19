@@ -240,13 +240,14 @@ def create_trainer_config(config: TrainJobConfig, output_dir: str) -> SFTConfig:
 def train(
     config: TrainJobConfig,
     logger: TrainingLogger,
-    tracker: MLflowTracker
+    tracker: MLflowTracker,
+    run_name: str
 ):
     """学習を実行"""
-    # 出力ディレクトリをベースディレクトリ + experiment_nameで構築
+    # 出力ディレクトリをベースディレクトリ + experiment_name + run_nameで構築
     base_output_dir = config.output.output_dir
     experiment_name = config.mlflow.experiment_name
-    output_dir = os.path.join(base_output_dir, experiment_name)
+    output_dir = os.path.join(base_output_dir, experiment_name, run_name)
     lora_dir = os.path.join(output_dir, "lora")
     merged_dir = os.path.join(output_dir, "merged")
     
@@ -261,6 +262,7 @@ def train(
     save_config(config, config_save_path)
     logger.info(f"Configuration saved to: {config_save_path}")
     logger.info(f"Experiment name: {experiment_name}")
+    logger.info(f"Run name: {run_name}")
     logger.info(f"Output directory: {output_dir}")
     
     # モデルの読み込み
@@ -401,13 +403,16 @@ Examples:
     
     # ドライランの場合は設定を表示して終了
     if args.dry_run:
+        # run_nameの決定（nullの場合は自動生成）
+        run_name = config.mlflow.run_name or f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         print("\n=== Configuration (Dry Run) ===")
         print(f"Training Type: {config.training_type}")
         print(f"Model: {config.model.name}")
         print(f"Data: {config.data.train_data_path}")
         print(f"Experiment Name: {config.mlflow.experiment_name}")
+        print(f"Run Name: {run_name}")
         print(f"Output Base Dir: {config.output.output_dir}")
-        print(f"Output Dir: {config.output.output_dir}/{config.mlflow.experiment_name}")
+        print(f"Output Dir: {config.output.output_dir}/{config.mlflow.experiment_name}/{run_name}")
         print(f"Batch Size: {config.training.per_device_train_batch_size}")
         print(f"Gradient Accumulation: {config.training.gradient_accumulation_steps}")
         print(f"Max Seq Length: {config.model.max_seq_length}")
@@ -417,10 +422,13 @@ Examples:
         print("\nConfiguration is valid. Remove --dry-run to start training.")
         sys.exit(0)
     
-    # 出力ディレクトリをベースディレクトリ + experiment_nameで構築
+    # run_nameの決定（nullの場合は自動生成）
+    run_name = config.mlflow.run_name or f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    # 出力ディレクトリをベースディレクトリ + experiment_name + run_nameで構築
     base_output_dir = config.output.output_dir
     experiment_name = config.mlflow.experiment_name
-    output_dir = os.path.join(base_output_dir, experiment_name)
+    output_dir = os.path.join(base_output_dir, experiment_name, run_name)
     
     # 出力ディレクトリの作成
     os.makedirs(output_dir, exist_ok=True)
@@ -432,12 +440,12 @@ Examples:
         capture_stdout=True
     )
     
-    # MLflowトラッカーのセットアップ
+    # MLflowトラッカーのセットアップ（run_nameを統一）
     tracker = setup_mlflow_tracker(
         enabled=config.mlflow.enabled,
         tracking_uri=config.mlflow.tracking_uri,
         experiment_name=config.mlflow.experiment_name,
-        run_name=config.mlflow.run_name,
+        run_name=run_name,  # main関数で決定したrun_nameを使用
         tags=config.mlflow.tags
     )
     
@@ -462,7 +470,7 @@ Examples:
             logger.info(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
         
         # 学習実行
-        success = train(config, logger, tracker)
+        success = train(config, logger, tracker, run_name)
         
     except KeyboardInterrupt:
         logger.warning("Training interrupted by user")

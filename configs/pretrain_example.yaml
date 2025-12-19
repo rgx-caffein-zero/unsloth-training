@@ -156,7 +156,7 @@ data:
 # =============================================================================
 output:
   # 出力ベースディレクトリ
-  # 実際の出力先: {output_dir}/{mlflow.experiment_name}/
+  # 実際の出力先: {output_dir}/{mlflow.experiment_name}/{mlflow.run_name}/
   output_dir: /workspace/work/models/outputs
   
   # マージされたモデルを保存するか
@@ -178,10 +178,11 @@ mlflow:
   # トラッキングURI
   tracking_uri: file:///workspace/work/mlruns
   
-  # 実験名
+  # 実験名（出力ディレクトリ名としても使用）
   experiment_name: unsloth-pretraining
   
-  # 実行名（nullで自動生成）
+  # 実行名（出力サブディレクトリ名としても使用）
+  # nullの場合は "run_YYYYMMDD_HHMMSS" 形式で自動生成
   run_name: null
   
   # タグ

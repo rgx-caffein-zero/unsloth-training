@@ -25,7 +25,7 @@ model:
   #   - unsloth/gemma-7b-bnb-4bit
   #   - unsloth/gemma-2b
   #   - unsloth/Qwen2.5-7B-Instruct-bnb-4bit
-  name: unsloth/gemma-2b
+  name: unsloth/mistral-7b-instruct-v0.2-bnb-4bit
   
   # 最大シーケンス長
   max_seq_length: 2048
@@ -159,7 +159,7 @@ data:
 # =============================================================================
 output:
   # 出力ベースディレクトリ
-  # 実際の出力先: {output_dir}/{mlflow.experiment_name}/
+  # 実際の出力先: {output_dir}/{mlflow.experiment_name}/{mlflow.run_name}/
   output_dir: /workspace/work/models/outputs
   
   # マージされたモデルを保存するか
@@ -182,10 +182,11 @@ mlflow:
   # トラッキングURI
   tracking_uri: file:///workspace/work/mlruns
   
-  # 実験名
+  # 実験名（出力ディレクトリ名としても使用）
   experiment_name: unsloth-finetuning
   
-  # 実行名（nullで自動生成）
+  # 実行名（出力サブディレクトリ名としても使用）
+  # nullの場合は "run_YYYYMMDD_HHMMSS" 形式で自動生成
   run_name: null
   
   # タグ
