@@ -107,15 +107,17 @@ data:
 
 # 出力設定
 output:
-  output_dir: /workspace/work/models/finetuned
+  output_dir: /workspace/work/models/outputs  # ベースディレクトリ
   save_merged_model: true
   log_file: training.log
 
 # MLflow設定
 mlflow:
   enabled: true
-  experiment_name: unsloth-finetuning
+  experiment_name: unsloth-finetuning  # この名前が出力サブディレクトリになる
 ```
+
+**出力先**: `{output_dir}/{experiment_name}/` = `/workspace/work/models/outputs/unsloth-finetuning/`
 
 ### 主要な設定項目
 
@@ -127,7 +129,9 @@ mlflow:
 | `training.per_device_train_batch_size` | バッチサイズ | GPUあたりのサンプル数 |
 | `training.learning_rate` | 学習率 | 最適化の学習率 |
 | `data.train_data_path` | データパス | 学習データのパス |
+| `output.output_dir` | 出力ベースディレクトリ | 学習出力のベースパス |
 | `mlflow.enabled` | MLflow有効化 | 学習追跡の有効/無効 |
+| `mlflow.experiment_name` | 実験名 | 出力サブディレクトリ名としても使用 |
 
 ## MLflow による学習管理
 
@@ -167,6 +171,26 @@ mlflow runs list --experiment-id <experiment_id>
   - 学習進捗
   - エラー情報
 
+## 出力ファイル構成
+
+学習完了後、以下のファイルが生成されます：
+
+```
+models/outputs/{experiment_name}/
+├── lora/                    # LoRAアダプター
+│   ├── adapter_config.json
+│   ├── adapter_model.safetensors
+│   └── tokenizer files...
+├── merged/                  # マージされたモデル（save_merged_model: true の場合）
+│   ├── config.json
+│   ├── model.safetensors
+│   └── tokenizer files...
+├── train_config.yaml        # 使用した設定ファイル
+└── training.log             # 学習ログ
+```
+
+`experiment_name` は `mlflow.experiment_name` の値が使用されます。
+
 ## ディレクトリ構成
 
 ```
@@ -177,7 +201,16 @@ mlflow runs list --experiment-id <experiment_id>
 ├── data/                 # 学習データ
 │   ├── sample_finetune.jsonl
 │   └── pretrain_data.txt
-├── models/               # 保存されたモデル
+├── models/
+│   ├── cache/            # モデルキャッシュ
+│   │   ├── ollama/       # Ollamaモデル
+│   │   └── huggingface/  # HuggingFaceモデル
+│   └── outputs/          # 学習出力
+│       └── {experiment_name}/  # mlflow.experiment_name
+│           ├── lora/     # LoRAアダプター
+│           ├── merged/   # マージされたモデル
+│           ├── train_config.yaml
+│           └── training.log
 ├── mlruns/              # MLflowのデータ
 ├── scripts/             # Pythonスクリプト
 │   ├── train.py         # 統一エントリーポイント

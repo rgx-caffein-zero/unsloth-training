@@ -243,13 +243,25 @@ def train(
     tracker: MLflowTracker
 ):
     """学習を実行"""
-    output_dir = config.output.output_dir
+    # 出力ディレクトリをベースディレクトリ + experiment_nameで構築
+    base_output_dir = config.output.output_dir
+    experiment_name = config.mlflow.experiment_name
+    output_dir = os.path.join(base_output_dir, experiment_name)
+    lora_dir = os.path.join(output_dir, "lora")
+    merged_dir = os.path.join(output_dir, "merged")
+    
+    # ディレクトリの作成
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(lora_dir, exist_ok=True)
+    if config.output.save_merged_model:
+        os.makedirs(merged_dir, exist_ok=True)
     
     # 設定のコピーを保存
     config_save_path = os.path.join(output_dir, "train_config.yaml")
     save_config(config, config_save_path)
     logger.info(f"Configuration saved to: {config_save_path}")
+    logger.info(f"Experiment name: {experiment_name}")
+    logger.info(f"Output directory: {output_dir}")
     
     # モデルの読み込み
     logger.section("Loading Model")
@@ -267,7 +279,7 @@ def train(
     
     # Trainerの設定
     logger.section("Training Configuration")
-    sft_config = create_trainer_config(config, output_dir)
+    sft_config = create_trainer_config(config, lora_dir)
     
     logger.info(f"Batch size: {config.training.per_device_train_batch_size}")
     logger.info(f"Gradient accumulation: {config.training.gradient_accumulation_steps}")
@@ -303,13 +315,12 @@ def train(
         
         # モデルの保存
         logger.section("Saving Model")
-        model.save_pretrained(output_dir)
-        tokenizer.save_pretrained(output_dir)
-        logger.info(f"LoRA adapter saved to: {output_dir}")
+        model.save_pretrained(lora_dir)
+        tokenizer.save_pretrained(lora_dir)
+        logger.info(f"LoRA adapter saved to: {lora_dir}")
         
         # マージされたモデルの保存
         if config.output.save_merged_model:
-            merged_dir = f"{output_dir}_merged"
             model.save_pretrained_merged(
                 merged_dir, 
                 tokenizer, 
@@ -394,7 +405,9 @@ Examples:
         print(f"Training Type: {config.training_type}")
         print(f"Model: {config.model.name}")
         print(f"Data: {config.data.train_data_path}")
-        print(f"Output: {config.output.output_dir}")
+        print(f"Experiment Name: {config.mlflow.experiment_name}")
+        print(f"Output Base Dir: {config.output.output_dir}")
+        print(f"Output Dir: {config.output.output_dir}/{config.mlflow.experiment_name}")
         print(f"Batch Size: {config.training.per_device_train_batch_size}")
         print(f"Gradient Accumulation: {config.training.gradient_accumulation_steps}")
         print(f"Max Seq Length: {config.model.max_seq_length}")
@@ -404,12 +417,17 @@ Examples:
         print("\nConfiguration is valid. Remove --dry-run to start training.")
         sys.exit(0)
     
+    # 出力ディレクトリをベースディレクトリ + experiment_nameで構築
+    base_output_dir = config.output.output_dir
+    experiment_name = config.mlflow.experiment_name
+    output_dir = os.path.join(base_output_dir, experiment_name)
+    
     # 出力ディレクトリの作成
-    os.makedirs(config.output.output_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     
     # ロガーのセットアップ
     logger = setup_logger(
-        output_dir=config.output.output_dir,
+        output_dir=output_dir,
         log_file=config.output.log_file,
         capture_stdout=True
     )

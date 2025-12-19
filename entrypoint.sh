@@ -3,8 +3,13 @@
 # Ollamaモデルディレクトリの作成と権限設定
 if [ -n "$OLLAMA_MODELS" ]; then
     echo "$USER_PASSWORD" | sudo -S mkdir -p "$OLLAMA_MODELS" 2>/dev/null
-    echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth "$(dirname "$OLLAMA_MODELS")" 2>/dev/null
+    echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth "$OLLAMA_MODELS" 2>/dev/null
 fi
+
+# モデルディレクトリ構造の作成
+echo "$USER_PASSWORD" | sudo -S mkdir -p /workspace/work/models/cache/ollama 2>/dev/null
+echo "$USER_PASSWORD" | sudo -S mkdir -p /workspace/work/models/cache/huggingface 2>/dev/null
+echo "$USER_PASSWORD" | sudo -S mkdir -p /workspace/work/models/outputs 2>/dev/null
 
 # 作業ディレクトリの権限設定（マウントされたディレクトリ用）
 echo "$USER_PASSWORD" | sudo -S chown -R unsloth:unsloth /workspace/work/models 2>/dev/null

@@ -92,7 +92,7 @@ class DataConfig:
 @dataclass
 class OutputConfig:
     """出力設定"""
-    output_dir: str = "/workspace/work/models/output"
+    output_dir: str = "/workspace/work/models/outputs"  # ベースディレクトリ
     save_merged_model: bool = True
     save_method: str = "merged_16bit"
     log_file: str = "training.log"

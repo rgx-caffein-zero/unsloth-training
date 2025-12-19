@@ -155,8 +155,9 @@ data:
 # 出力設定
 # =============================================================================
 output:
-  # 出力ディレクトリ
-  output_dir: /workspace/work/models/continued_pretrained
+  # 出力ベースディレクトリ
+  # 実際の出力先: {output_dir}/{mlflow.experiment_name}/
+  output_dir: /workspace/work/models/outputs
   
   # マージされたモデルを保存するか
   save_merged_model: true

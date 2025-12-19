@@ -16,7 +16,8 @@ COPY --chown=unsloth:unsloth data/ ./data/
 COPY --chown=unsloth:unsloth configs/ ./configs/
 
 # モデル保存用ディレクトリの作成
-RUN mkdir -p ./models && chown -R unsloth:unsloth ./models
+RUN mkdir -p ./models/cache/ollama ./models/cache/huggingface ./models/outputs && \
+    chown -R unsloth:unsloth ./models
 
 # MLflow保存用ディレクトリの作成
 RUN mkdir -p ./mlruns && chown -R unsloth:unsloth ./mlruns

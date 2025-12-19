@@ -5,15 +5,16 @@ services:
     build: .
     container_name: ollama-unsloth-training
     environment:
+      - PYTHONDONTWRITEBYTECODE=1
       - JUPYTER_PASSWORD=unsloth
       - JUPYTER_PORT=8888
       - USER_PASSWORD=unsloth2024
       - OLLAMA_HOST=0.0.0.0
-      - OLLAMA_MODELS=/workspace/work/models/ollama
+      - OLLAMA_MODELS=/workspace/work/models/cache/ollama
       # Unsloth関連
       - UNSLOTH_COMPILE_CACHE=/tmp/unsloth_compiled_cache
-      - HF_HOME=/workspace/work/models/huggingface
-      - TRANSFORMERS_CACHE=/workspace/work/models/huggingface
+      - HF_HOME=/workspace/work/models/cache/huggingface
+      - TRANSFORMERS_CACHE=/workspace/work/models/cache/huggingface
       # MLflow関連
       - MLFLOW_TRACKING_URI=file:///workspace/work/mlruns
     volumes:
