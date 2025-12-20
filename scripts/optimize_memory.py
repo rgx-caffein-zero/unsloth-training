@@ -117,7 +117,7 @@ def main():
     
     save_config(settings, "/workspace/work/training_config.json")
     
-    print("\n=== Quick Start Commands (New Method) ===")
+    print("\n=== Quick Start Commands ===")
     print("\n1. Using configuration file (recommended):")
     print("   # Edit the config file as needed")
     print("   cp configs/finetune_example.yaml configs/my_config.yaml")
@@ -125,6 +125,9 @@ def main():
     
     print("\n2. With auto GPU optimization:")
     print("   python3 scripts/train.py --config configs/finetune_example.yaml --auto-optimize")
+    
+    print("\n3. Run inference after training:")
+    print("   python3 scripts/inference.py --config configs/inference_example.yaml")
     
     print("\n=== Tips ===")
     print("  • Monitor GPU usage: watch -n 1 nvidia-smi")

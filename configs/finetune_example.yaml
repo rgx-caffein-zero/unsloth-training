@@ -191,7 +191,7 @@ mlflow:
   
   # タグ
   tags:
-    project: ollama-unsloth-training
+    project: unsloth-training
     type: finetuning
   
   # モデルをログするか

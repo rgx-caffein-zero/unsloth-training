@@ -1,0 +1,116 @@
+# =============================================================================
+# vLLM推論設定ファイル
+# =============================================================================
+# 使用方法: 
+#   python3 scripts/inference.py --config configs/inference_example.yaml
+#   python3 scripts/inference.py --config configs/inference_example.yaml --server
+# =============================================================================
+
+# 説明（任意）
+description: "vLLM inference configuration example"
+
+# =============================================================================
+# モデル設定
+# =============================================================================
+model:
+  # モデルパス（学習済みモデルのパスまたはHugging Faceモデル名）
+  # 学習したモデルを使用する場合:
+  #   path: /workspace/work/models/outputs/unsloth-finetuning/run_20241220_143052/merged
+  # Hugging Faceモデルを使用する場合:
+  #   path: mistralai/Mistral-7B-Instruct-v0.2
+  path: /workspace/work/models/outputs/unsloth-finetuning/run_20241220_143052/merged
+  
+  # トークナイザーのパス（nullの場合はモデルパスと同じ）
+  tokenizer_path: null
+  
+  # データ型
+  # "auto", "float16", "bfloat16", "float32"
+  dtype: auto
+  
+  # 量子化設定
+  # null, "awq", "gptq", "squeezellm", "fp8"
+  quantization: null
+  
+  # カスタムコードの信頼
+  trust_remote_code: true
+
+# =============================================================================
+# vLLMエンジン設定
+# =============================================================================
+engine:
+  # GPU メモリ使用率（0.0-1.0）
+  gpu_memory_utilization: 0.9
+  
+  # 最大モデル長（nullで自動検出）
+  max_model_len: null
+  
+  # テンソル並列数（マルチGPU時に使用）
+  tensor_parallel_size: 1
+  
+  # スワップスペース（GB）
+  swap_space: 4
+  
+  # KVキャッシュのデータ型
+  # "auto", "fp8"
+  kv_cache_dtype: auto
+  
+  # 最大シーケンス数（同時処理可能なリクエスト数）
+  max_num_seqs: 256
+  
+  # シード（再現性のため）
+  seed: null
+
+# =============================================================================
+# サンプリング設定（デフォルト値）
+# =============================================================================
+sampling:
+  # 最大生成トークン数
+  max_tokens: 512
+  
+  # 温度（0.0で決定論的）
+  temperature: 0.7
+  
+  # Top-p サンプリング
+  top_p: 0.9
+  
+  # Top-k サンプリング（0で無効）
+  top_k: 0
+  
+  # 繰り返しペナルティ
+  repetition_penalty: 1.1
+  
+  # 停止トークン
+  stop_tokens: []
+  
+  # EOS時に停止するか
+  stop_token_ids: []
+
+# =============================================================================
+# サーバー設定（--server オプション使用時）
+# =============================================================================
+server:
+  # ホスト
+  host: "0.0.0.0"
+  
+  # ポート
+  port: 8000
+  
+  # APIキー（nullで無効）
+  api_key: null
+  
+  # OpenAI互換API
+  openai_api: true
+  
+  # チャットテンプレート（nullでモデルのデフォルト）
+  chat_template: null
+
+# =============================================================================
+# プロンプト設定（インタラクティブモード用）
+# =============================================================================
+prompt:
+  # プロンプトテンプレート
+  # 利用可能: "alpaca", "chatml", "llama3", "raw"
+  template: alpaca
+  
+  # システムプロンプト（テンプレートがサポートする場合）
+  system_prompt: "You are a helpful AI assistant."

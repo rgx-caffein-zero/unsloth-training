@@ -1,12 +1,12 @@
-# Ollama + Unsloth Training Environment
+# Unsloth Training Environment with vLLM Inference
 
 Unsloth公式Dockerイメージをベースにした、ローカルLLMのファインチューニング・継続事前学習環境です。
-モデルのダウンロードにはOllamaを利用できます。
+vLLMによる高速推論機能を搭載しています。
 
 ## 特徴
 
 - **Unsloth公式Dockerイメージ**をベース（依存関係の問題なし）
-- **Ollama**によるモデルダウンロード対応
+- **vLLM**による高速推論・APIサーバー機能
 - **統一された学習エントリーポイント**（`train.py`）
 - **YAML設定ファイル**による柔軟なパラメータ管理
 - **MLflow**による学習管理・追跡
@@ -21,7 +21,7 @@ Unsloth公式Dockerイメージをベースにした、ローカルLLMのファ�
 ```bash
 # リポジトリのクローン
 git clone <repository-url>
-cd ollama-unsloth-training
+cd unsloth-training
 
 # Dockerイメージのビルドと起動
 docker-compose up -d
@@ -37,7 +37,7 @@ docker-compose up -d
 
 ```bash
 # コンテナに入る
-docker exec -it ollama-unsloth-training bash
+docker exec -it unsloth-training bash
 
 # または、Jupyter Lab上のターミナルを使用
 ```
@@ -63,14 +63,54 @@ python3 scripts/train.py --config configs/finetune_example.yaml --dry-run
 python3 scripts/train.py --config configs/pretrain_example.yaml
 ```
 
-### 4. 設定ファイルのカスタマイズ
+### 4. 推論の実行（vLLM）
+
+#### インタラクティブモード
+
+```bash
+# 学習したモデルで対話
+python3 scripts/inference.py --config configs/inference_example.yaml
+```
+
+#### 単一プロンプト
+
+```bash
+python3 scripts/inference.py --config configs/inference_example.yaml --prompt "こんにちは"
+```
+
+#### APIサーバーモード（OpenAI互換）
+
+```bash
+# APIサーバーを起動
+python3 scripts/inference.py --config configs/inference_example.yaml --server
+
+# 別のターミナルからAPIを呼び出し
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "your-model",
+    "messages": [{"role": "user", "content": "こんにちは"}]
+  }'
+```
+
+#### バッチ推論
+
+```bash
+# プロンプトファイルから一括推論
+python3 scripts/inference.py --config configs/inference_example.yaml \
+  --input prompts.txt --output results.jsonl
+```
+
+### 5. 設定ファイルのカスタマイズ
 
 `configs/` ディレクトリ内の設定ファイルをコピーして編集：
 
 ```bash
+# 学習用
 cp configs/finetune_example.yaml configs/my_finetune.yaml
-# 設定ファイルを編集
-python3 scripts/train.py --config configs/my_finetune.yaml
+
+# 推論用
+cp configs/inference_example.yaml configs/my_inference.yaml
 ```
 
 ## 設定ファイル構成
@@ -107,20 +147,48 @@ data:
 
 # 出力設定
 output:
-  output_dir: /workspace/work/models/outputs  # ベースディレクトリ
+  output_dir: /workspace/work/models/outputs
   save_merged_model: true
   log_file: training.log
 
 # MLflow設定
 mlflow:
   enabled: true
-  experiment_name: unsloth-finetuning  # 実験名（出力サブディレクトリ）
-  run_name: null  # 実行名（nullで自動生成: run_YYYYMMDD_HHMMSS）
+  experiment_name: unsloth-finetuning
+  run_name: null
 ```
 
-**出力先**: `{output_dir}/{experiment_name}/{run_name}/`
+### 推論設定例 (`configs/inference_example.yaml`)
 
-例: `/workspace/work/models/outputs/unsloth-finetuning/run_20241220_143052/`
+```yaml
+# モデル設定
+model:
+  # 学習したモデルのパス
+  path: /workspace/work/models/outputs/unsloth-finetuning/run_20241220_143052/merged
+  dtype: auto
+  trust_remote_code: true
+
+# vLLMエンジン設定
+engine:
+  gpu_memory_utilization: 0.9
+  tensor_parallel_size: 1
+
+# サンプリング設定
+sampling:
+  max_tokens: 512
+  temperature: 0.7
+  top_p: 0.9
+
+# サーバー設定（--server オプション使用時）
+server:
+  host: "0.0.0.0"
+  port: 8000
+
+# プロンプト設定
+prompt:
+  template: alpaca
+  system_prompt: "You are a helpful AI assistant."
+```
 
 ### 主要な設定項目
 
@@ -136,6 +204,36 @@ mlflow:
 | `mlflow.enabled` | MLflow有効化 | 学習追跡の有効/無効 |
 | `mlflow.experiment_name` | 実験名 | 出力サブディレクトリ名（第1階層） |
 | `mlflow.run_name` | 実行名 | 出力サブディレクトリ名（第2階層、nullで自動生成） |
+
+## vLLM 推論機能
+
+### 推論モード一覧
+
+| モード | コマンド | 説明 |
+|-------|---------|------|
+| インタラクティブ | `--config` のみ | 対話形式で推論 |
+| 単一プロンプト | `--prompt` | 1つのプロンプトを処理 |
+| APIサーバー | `--server` | OpenAI互換APIサーバー起動 |
+| バッチ処理 | `--input` `--output` | ファイルから一括処理 |
+
+### APIサーバー使用例
+
+```python
+import openai
+
+client = openai.OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="dummy"  # APIキー未設定の場合
+)
+
+response = client.chat.completions.create(
+    model="your-model",
+    messages=[
+        {"role": "user", "content": "こんにちは"}
+    ]
+)
+print(response.choices[0].message.content)
+```
 
 ## MLflow による学習管理
 
@@ -202,13 +300,13 @@ models/outputs/{experiment_name}/{run_name}/
 /workspace/work/
 ├── configs/              # YAML設定ファイル
 │   ├── finetune_example.yaml
-│   └── pretrain_example.yaml
+│   ├── pretrain_example.yaml
+│   └── inference_example.yaml
 ├── data/                 # 学習データ
 │   ├── sample_finetune.jsonl
 │   └── pretrain_data.txt
 ├── models/
 │   ├── cache/            # モデルキャッシュ
-│   │   ├── ollama/       # Ollamaモデル
 │   │   └── huggingface/  # HuggingFaceモデル
 │   └── outputs/          # 学習出力
 │       └── {experiment_name}/
@@ -219,7 +317,8 @@ models/outputs/{experiment_name}/{run_name}/
 │               └── training.log
 ├── mlruns/              # MLflowのデータ
 ├── scripts/             # Pythonスクリプト
-│   ├── train.py         # 統一エントリーポイント
+│   ├── train.py         # 学習エントリーポイント
+│   ├── inference.py     # vLLM推論スクリプト
 │   ├── config.py        # 設定管理
 │   ├── logger.py        # ログ管理
 │   ├── mlflow_tracker.py # MLflow統合
@@ -241,16 +340,6 @@ models/outputs/{experiment_name}/{run_name}/
 | gemma-2b | unsloth/gemma-2b | 8GB+ |
 | qwen2-7b | unsloth/Qwen2.5-7B-Instruct-bnb-4bit | 12GB+ |
 
-### Ollamaモデル（推論用）
-
-```bash
-ollama pull mistral:7b-instruct-q4_0
-ollama pull llama2:7b-chat-q4_0
-ollama pull llama3.1:8b-instruct-q4_0
-ollama pull gemma:7b
-ollama pull qwen2.5:7b-instruct-q4_0
-```
-
 ## データフォーマット
 
 ### ファインチューニング用（JSONL）
@@ -270,6 +359,20 @@ ollama pull qwen2.5:7b-instruct-q4_0
 3番目の段落のテキスト...
 ```
 
+### バッチ推論用（テキスト or JSONL）
+
+```text
+# prompts.txt
+最初のプロンプト
+2番目のプロンプト
+```
+
+```json
+// prompts.jsonl
+{"instruction": "質問に答えてください", "input": "日本の首都は？"}
+{"instruction": "翻訳してください", "input": "Hello"}
+```
+
 ## 環境変数
 
 | 変数名 | デフォルト値 | 説明 |
@@ -277,8 +380,8 @@ ollama pull qwen2.5:7b-instruct-q4_0
 | JUPYTER_PASSWORD | unsloth | Jupyter Labのパスワード |
 | JUPYTER_PORT | 8888 | Jupyter Labのポート |
 | USER_PASSWORD | unsloth2024 | sudo用パスワード |
-| OLLAMA_HOST | 0.0.0.0 | Ollama APIのホスト |
 | MLFLOW_TRACKING_URI | file:///workspace/work/mlruns | MLflowのトラッキングURI |
+| VLLM_ATTENTION_BACKEND | FLASHINFER | vLLMのアテンションバックエンド |
 
 ## トラブルシューティング
 
@@ -299,6 +402,14 @@ model:
 
 ```bash
 python3 scripts/train.py --config configs/finetune_example.yaml --auto-optimize
+```
+
+### vLLM推論時のメモリ不足
+
+```yaml
+engine:
+  gpu_memory_utilization: 0.8  # GPUメモリ使用率を下げる
+  max_model_len: 2048  # 最大モデル長を制限
 ```
 
 ### MLflowが起動しない場合
@@ -322,5 +433,5 @@ python3 -c "import torch; print(torch.cuda.is_available())"
 
 - [Unsloth公式ドキュメント](https://docs.unsloth.ai/)
 - [Unsloth Dockerガイド](https://docs.unsloth.ai/get-started/install-and-update/docker)
-- [Ollama公式サイト](https://ollama.com/)
+- [vLLM公式ドキュメント](https://docs.vllm.ai/)
 - [MLflow公式ドキュメント](https://mlflow.org/docs/latest/index.html)

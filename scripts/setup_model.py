@@ -9,7 +9,6 @@ os.environ["UNSLOTH_COMPILE_CACHE"] = "/tmp/unsloth_compiled_cache"
 # Unslothを最初にインポート（最適化のため必須）
 from unsloth import FastLanguageModel
 
-import subprocess
 import argparse
 import torch
 import gc
@@ -53,14 +52,6 @@ MODEL_CONFIGS = {
     },
 }
 
-OLLAMA_MODELS = {
-    "mistral": "mistral:7b-instruct-q4_0",
-    "llama2": "llama2:7b-chat-q4_0",
-    "llama3": "llama3.1:8b-instruct-q4_0",
-    "gemma": "gemma:7b",
-    "qwen2": "qwen2.5:7b-instruct-q4_0",
-}
-
 
 def cleanup_memory():
     """メモリのクリーンアップ"""
@@ -80,20 +71,6 @@ def check_gpu() -> float:
     print(f"GPU: {torch.cuda.get_device_name(0)}")
     print(f"Total VRAM: {gpu_memory:.2f} GB")
     return gpu_memory
-
-
-def download_ollama_model(model_key: str) -> bool:
-    """Ollamaでモデルをダウンロード"""
-    model_name = OLLAMA_MODELS.get(model_key, model_key)
-    print(f"Downloading {model_name} using Ollama...")
-    
-    try:
-        subprocess.run(["ollama", "pull", model_name], check=True)
-        print(f"✅ Successfully downloaded {model_name}")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Error downloading model: {e}")
-        return False
 
 
 def prepare_model(model_type: str = "mistral-7b"):
@@ -148,23 +125,17 @@ def main():
     parser.add_argument("--model-type", type=str, default="mistral-7b",
                         choices=list(MODEL_CONFIGS.keys()),
                         help="Model type to use")
-    parser.add_argument("--download-ollama", action="store_true",
-                        help="Download model using Ollama first")
     args = parser.parse_args()
     
     gpu_memory = check_gpu()
     if gpu_memory == 0:
         return
     
-    if args.download_ollama:
-        model_key = args.model_type.split('-')[0]
-        download_ollama_model(model_key)
-    
     try:
         print(f"\nInitializing model: {args.model_type}")
         model, tokenizer = prepare_model(args.model_type)
         
-        print("\n=== Next Steps (New Method) ===")
+        print("\n=== Next Steps ===")
         print("1. Copy and edit the configuration file:")
         print("   cp configs/finetune_example.yaml configs/my_config.yaml")
         print("")
@@ -173,6 +144,9 @@ def main():
         print("")
         print("3. Or use auto GPU optimization:")
         print("   python3 scripts/train.py --config configs/my_config.yaml --auto-optimize")
+        print("")
+        print("4. After training, run inference with vLLM:")
+        print("   python3 scripts/inference.py --config configs/inference_example.yaml")
         
     except torch.cuda.OutOfMemoryError:
         print("\n❌ Out of Memory Error!")

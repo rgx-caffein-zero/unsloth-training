@@ -1,11 +1,8 @@
 FROM unsloth/unsloth
 
-# Ollamaのインストール（rootユーザーで実行）
+# vLLMとMLflow、YAMLライブラリのインストール
 USER root
-RUN curl -fsSL https://ollama.com/install.sh | sh
-
-# MLflowとYAMLライブラリのインストール
-RUN pip install --break-system-packages mlflow pyyaml
+RUN pip install --break-system-packages mlflow pyyaml vllm
 
 # 作業ディレクトリとスクリプトのセットアップ
 WORKDIR /workspace/work
@@ -16,7 +13,7 @@ COPY --chown=unsloth:unsloth data/ ./data/
 COPY --chown=unsloth:unsloth configs/ ./configs/
 
 # モデル保存用ディレクトリの作成
-RUN mkdir -p ./models/cache/ollama ./models/cache/huggingface ./models/outputs && \
+RUN mkdir -p ./models/cache/huggingface ./models/outputs && \
     chown -R unsloth:unsloth ./models
 
 # MLflow保存用ディレクトリの作成
