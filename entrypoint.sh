@@ -10,6 +10,8 @@ mkdir -p /workspace/work/notebooks 2>/dev/null
 mkdir -p /home/unsloth/.ollama/models 2>/dev/null
 mkdir -p /tmp/unsloth_compiled_cache 2>/dev/null
 
+sudo chown -R unsloth:unsloth /workspace/work/* 2>/dev/null
+
 # Ollamaサーバーをバックグラウンドで起動
 echo "Starting Ollama server..."
 ollama serve &
