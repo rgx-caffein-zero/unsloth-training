@@ -417,10 +417,10 @@ models/outputs/{experiment_name}/{run_name}/
 |--------|-------------|------|
 | JUPYTER_PASSWORD | unsloth | Jupyter Labのパスワード |
 | JUPYTER_PORT | 8888 | Jupyter Labのポート |
-| USER_PASSWORD | unsloth2024 | sudo用パスワード |
 | MLFLOW_TRACKING_URI | file:///workspace/work/mlruns | MLflowのトラッキングURI |
 | OLLAMA_HOST | 0.0.0.0:11434 | Ollama APIホスト |
 | OLLAMA_MODELS | /home/unsloth/.ollama/models | Ollamaモデルの保存先 |
+| UNSLOTH_COMPILE_CACHE | /tmp/unsloth_compiled_cache | Unslothコンパイルキャッシュ |
 
 ## トラブルシューティング
 

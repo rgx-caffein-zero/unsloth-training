@@ -7,7 +7,6 @@ services:
     environment:
       - JUPYTER_PASSWORD=unsloth
       - JUPYTER_PORT=8888
-      - USER_PASSWORD=unsloth2024
       # Unsloth関連
       - UNSLOTH_COMPILE_CACHE=/tmp/unsloth_compiled_cache
       - HF_HOME=/workspace/work/models/cache/huggingface

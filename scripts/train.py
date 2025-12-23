@@ -238,6 +238,167 @@ def create_trainer_config(config: TrainJobConfig, output_dir: str) -> SFTConfig:
     )
 
 
+def convert_to_gguf_direct(
+    model,
+    tokenizer,
+    config: TrainJobConfig,
+    run_name: str,
+    logger: TrainingLogger,
+    tracker: MLflowTracker
+):
+    """学習直後のモデルオブジェクトをGGUF形式に変換（推奨方法）"""
+    from convert_to_gguf import create_modelfile, register_with_ollama
+    import shutil
+    
+    logger.section("GGUF Conversion")
+    
+    # GGUF出力ディレクトリの決定
+    if config.gguf.output_dir:
+        gguf_output_dir = config.gguf.output_dir
+    else:
+        gguf_output_dir = os.path.join(
+            config.output.output_dir,
+            config.mlflow.experiment_name,
+            run_name,
+            "gguf"
+        )
+    
+    # Ollamaモデル名の決定
+    ollama_model_name = config.gguf.ollama_model_name
+    if not ollama_model_name:
+        ollama_model_name = f"{config.mlflow.experiment_name}-{run_name}".lower()
+        ollama_model_name = ollama_model_name.replace("_", "-").replace(" ", "-")
+    
+    logger.info(f"Converting to GGUF format...")
+    logger.info(f"  Output: {gguf_output_dir}")
+    logger.info(f"  Quantization: {config.gguf.quantization}")
+    logger.info(f"  Ollama model name: {ollama_model_name}")
+    
+    try:
+        # 出力ディレクトリの作成
+        os.makedirs(gguf_output_dir, exist_ok=True)
+        
+        # 変換前のカレントディレクトリを記録し、出力ディレクトリに移動
+        original_cwd = os.getcwd()
+        os.chdir(gguf_output_dir)
+        logger.info(f"Changed working directory to: {gguf_output_dir}")
+        
+        # 学習後のモデルに対して直接GGUF変換を実行
+        logger.info(f"Saving as GGUF with {config.gguf.quantization} quantization...")
+        try:
+            model.save_pretrained_gguf(
+                gguf_output_dir,
+                tokenizer,
+                quantization_method=config.gguf.quantization,
+            )
+        finally:
+            # 元のディレクトリに戻す
+            os.chdir(original_cwd)
+            logger.info(f"Restored working directory to: {original_cwd}")
+        
+        # 生成されたGGUFファイルを探す（複数の場所を検索）
+        gguf_files = []
+        search_paths = [
+            gguf_output_dir,                    # 指定した出力ディレクトリ
+            original_cwd,                        # 元のカレントディレクトリ
+            os.getcwd(),                         # 現在のカレントディレクトリ
+            "/workspace/work",                   # ワークスペース
+        ]
+        
+        for search_path in search_paths:
+            if os.path.exists(search_path):
+                # 直下を検索
+                found = list(Path(search_path).glob("*.gguf"))
+                gguf_files.extend(found)
+                # 再帰的に検索
+                found_recursive = list(Path(search_path).rglob("*.gguf"))
+                gguf_files.extend(found_recursive)
+        
+        # 重複を除去
+        gguf_files = list(set(gguf_files))
+        
+        # 量子化タイプに合致するファイルを優先
+        quant_type = config.gguf.quantization.upper().replace("_", "_")
+        preferred_files = [f for f in gguf_files if quant_type in f.name.upper()]
+        if preferred_files:
+            gguf_files = preferred_files
+        
+        if not gguf_files:
+            logger.error("❌ GGUF file not found after conversion")
+            logger.info(f"Searched paths: {search_paths}")
+            tracker.set_tag("gguf.error", "file_not_found")
+            return None
+        
+        # 最初に見つかったファイルを使用
+        source_gguf_path = gguf_files[0]
+        logger.info(f"✅ GGUF file found: {source_gguf_path}")
+        
+        # ファイルがgguf_output_dirにない場合はコピー
+        final_gguf_path = Path(gguf_output_dir) / source_gguf_path.name
+        if source_gguf_path.parent != Path(gguf_output_dir):
+            logger.info(f"Moving GGUF file to output directory...")
+            shutil.copy2(str(source_gguf_path), str(final_gguf_path))
+            # 元のファイルを削除（コピー成功後）
+            if final_gguf_path.exists():
+                try:
+                    source_gguf_path.unlink()
+                except:
+                    pass
+        else:
+            final_gguf_path = source_gguf_path
+        
+        gguf_path = str(final_gguf_path)
+        logger.info(f"✅ GGUF file ready: {gguf_path}")
+        
+        # Modelfileの作成
+        logger.info("Creating Modelfile...")
+        modelfile_path = create_modelfile(
+            gguf_path=gguf_path,
+            output_path=gguf_output_dir,
+            system_prompt=config.gguf.system_prompt,
+            template=config.gguf.template,
+        )
+        logger.info(f"✅ Modelfile created: {modelfile_path}")
+        
+        # Ollamaへの登録
+        registered = False
+        if config.gguf.register_ollama:
+            logger.info("Registering with Ollama...")
+            registered = register_with_ollama(
+                modelfile_path=modelfile_path,
+                model_name=ollama_model_name,
+                logger=logger
+            )
+        
+        # MLflowにGGUF情報をログ
+        tracker.set_tag("gguf.enabled", "true")
+        tracker.set_tag("gguf.quantization", config.gguf.quantization)
+        tracker.set_tag("gguf.path", gguf_path)
+        if registered:
+            tracker.set_tag("ollama.model_name", ollama_model_name)
+        
+        logger.info("✅ GGUF conversion completed successfully!")
+        logger.info(f"  GGUF file: {gguf_path}")
+        if registered:
+            logger.info(f"  Ollama model: {ollama_model_name}")
+            logger.info(f"  Run with: ollama run {ollama_model_name}")
+        
+        return {
+            "success": True,
+            "gguf_path": gguf_path,
+            "modelfile_path": modelfile_path,
+            "model_name": ollama_model_name,
+            "registered": registered,
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ GGUF conversion error: {e}")
+        import traceback
+        logger.info(traceback.format_exc())
+        tracker.set_tag("gguf.error", str(e)[:500])
+        return None
+
+
 def convert_to_gguf(
     config: TrainJobConfig,
     merged_dir: str,
@@ -245,7 +406,7 @@ def convert_to_gguf(
     logger: TrainingLogger,
     tracker: MLflowTracker
 ):
-    """学習済みモデルをGGUF形式に変換"""
+    """保存済みモデルをGGUF形式に変換（手動変換用、非推奨）"""
     from convert_to_gguf import convert_and_register
     
     logger.section("GGUF Conversion")
@@ -393,6 +554,11 @@ def train(
         tokenizer.save_pretrained(lora_dir)
         logger.info(f"LoRA adapter saved to: {lora_dir}")
         
+        # GGUF変換（有効な場合、マージ保存の前に実行）
+        # 注意: GGUF変換はモデルオブジェクトに対して直接行う必要がある
+        if config.gguf.enabled:
+            convert_to_gguf_direct(model, tokenizer, config, run_name, logger, tracker)
+        
         # マージされたモデルの保存
         if config.output.save_merged_model:
             model.save_pretrained_merged(
@@ -405,15 +571,6 @@ def train(
         
         # 設定ファイルをMLflowにログ
         tracker.log_artifact(config_save_path)
-        
-        # GGUF変換（有効な場合）
-        if config.gguf.enabled and config.output.save_merged_model:
-            # メモリ解放
-            del model
-            del tokenizer
-            cleanup_memory()
-            
-            convert_to_gguf(config, merged_dir, run_name, logger, tracker)
         
         return True
         
