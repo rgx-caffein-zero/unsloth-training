@@ -99,6 +99,32 @@ class OutputConfig:
 
 
 @dataclass
+class GGUFConfig:
+    """GGUF変換設定"""
+    # GGUF変換を有効にするか
+    enabled: bool = False
+    
+    # 量子化タイプ
+    # 利用可能: q4_0, q4_1, q4_k_m, q4_k_s, q5_0, q5_1, q5_k_m, q5_k_s, q6_k, q8_0, f16, f32
+    quantization: str = "q4_k_m"
+    
+    # GGUF出力ディレクトリ（nullの場合はoutput_dir/ggufを使用）
+    output_dir: Optional[str] = None
+    
+    # Ollamaに登録するか
+    register_ollama: bool = True
+    
+    # Ollamaでのモデル名（nullの場合は自動生成）
+    ollama_model_name: Optional[str] = None
+    
+    # Modelfile用のシステムプロンプト
+    system_prompt: str = "You are a helpful AI assistant."
+    
+    # Modelfile用のプロンプトテンプレート
+    template: str = "alpaca"
+
+
+@dataclass
 class MLflowConfig:
     """MLflow設定"""
     enabled: bool = True
@@ -121,6 +147,7 @@ class TrainJobConfig:
     training: TrainingConfig = field(default_factory=TrainingConfig)
     data: DataConfig = field(default_factory=DataConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
+    gguf: GGUFConfig = field(default_factory=GGUFConfig)
     mlflow: MLflowConfig = field(default_factory=MLflowConfig)
     
     # メタデータ
@@ -173,6 +200,7 @@ def load_config(config_path: str) -> TrainJobConfig:
     training_config = _dataclass_from_dict(TrainingConfig, raw_config.get('training'))
     data_config = _dataclass_from_dict(DataConfig, raw_config.get('data'))
     output_config = _dataclass_from_dict(OutputConfig, raw_config.get('output'))
+    gguf_config = _dataclass_from_dict(GGUFConfig, raw_config.get('gguf'))
     mlflow_config = _dataclass_from_dict(MLflowConfig, raw_config.get('mlflow'))
     
     # トップレベル設定
@@ -183,6 +211,7 @@ def load_config(config_path: str) -> TrainJobConfig:
         training=training_config,
         data=data_config,
         output=output_config,
+        gguf=gguf_config,
         mlflow=mlflow_config,
         description=raw_config.get('description', ''),
         seed=raw_config.get('seed', 3407),
@@ -252,6 +281,15 @@ def save_config(config: TrainJobConfig, config_path: str):
             'save_method': config.output.save_method,
             'log_file': config.output.log_file,
         },
+        'gguf': {
+            'enabled': config.gguf.enabled,
+            'quantization': config.gguf.quantization,
+            'output_dir': config.gguf.output_dir,
+            'register_ollama': config.gguf.register_ollama,
+            'ollama_model_name': config.gguf.ollama_model_name,
+            'system_prompt': config.gguf.system_prompt,
+            'template': config.gguf.template,
+        },
         'mlflow': {
             'enabled': config.mlflow.enabled,
             'tracking_uri': config.mlflow.tracking_uri,
@@ -292,6 +330,15 @@ def validate_config(config: TrainJobConfig) -> List[str]:
     
     if config.lora.r < 1:
         errors.append("lora.r must be >= 1")
+    
+    # GGUF設定のチェック
+    valid_quantizations = [
+        "q4_0", "q4_1", "q4_k_m", "q4_k_s",
+        "q5_0", "q5_1", "q5_k_m", "q5_k_s",
+        "q6_k", "q8_0", "f16", "f32"
+    ]
+    if config.gguf.enabled and config.gguf.quantization not in valid_quantizations:
+        errors.append(f"Invalid gguf.quantization: {config.gguf.quantization}. Must be one of: {valid_quantizations}")
     
     return errors
 

@@ -145,7 +145,7 @@ def main():
         print("3. Or use auto GPU optimization:")
         print("   python3 scripts/train.py --config configs/my_config.yaml --auto-optimize")
         print("")
-        print("4. After training, run inference with vLLM:")
+        print("4. After training, run inference with Ollama:")
         print("   python3 scripts/inference.py --config configs/inference_example.yaml")
         
     except torch.cuda.OutOfMemoryError:

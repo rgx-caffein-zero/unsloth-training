@@ -1,71 +1,39 @@
 # =============================================================================
-# vLLM推論設定ファイル
+# Ollama推論設定ファイル
 # =============================================================================
 # 使用方法: 
 #   python3 scripts/inference.py --config configs/inference_example.yaml
-#   python3 scripts/inference.py --config configs/inference_example.yaml --server
+#   python3 scripts/inference.py --config configs/inference_example.yaml --prompt "こんにちは"
 # =============================================================================
 
 # 説明（任意）
-description: "vLLM inference configuration example"
+description: "Ollama inference configuration example"
 
 # =============================================================================
 # モデル設定
 # =============================================================================
 model:
-  # モデルパス（学習済みモデルのパスまたはHugging Faceモデル名）
-  # 学習したモデルを使用する場合:
-  #   path: /workspace/work/models/outputs/unsloth-finetuning/run_20241220_143052/merged
-  # Hugging Faceモデルを使用する場合:
-  #   path: mistralai/Mistral-7B-Instruct-v0.2
-  path: /workspace/work/models/outputs/unsloth-finetuning/run_20241220_143052/merged
+  # Ollamaモデル名
+  # ベースモデルの例:
+  #   - llama2
+  #   - llama3
+  #   - mistral
+  #   - gemma
+  #   - qwen2
+  # 学習済みモデルの場合は、Ollamaに登録したモデル名を指定:
+  #   - my-finetuned-model
+  name: llama2
   
-  # トークナイザーのパス（nullの場合はモデルパスと同じ）
-  tokenizer_path: null
-  
-  # データ型
-  # "auto", "float16", "bfloat16", "float32"
-  dtype: auto
-  
-  # 量子化設定
-  # null, "awq", "gptq", "squeezellm", "fp8"
-  quantization: null
-  
-  # カスタムコードの信頼
-  trust_remote_code: true
+  # 学習済みモデルのローカルパス（GGUF変換前、オプション）
+  # 指定した場合、convert_to_gguf.pyで変換・登録が必要
+  local_path: null
 
 # =============================================================================
-# vLLMエンジン設定
-# =============================================================================
-engine:
-  # GPU メモリ使用率（0.0-1.0）
-  gpu_memory_utilization: 0.9
-  
-  # 最大モデル長（nullで自動検出）
-  max_model_len: null
-  
-  # テンソル並列数（マルチGPU時に使用）
-  tensor_parallel_size: 1
-  
-  # スワップスペース（GB）
-  swap_space: 4
-  
-  # KVキャッシュのデータ型
-  # "auto", "fp8"
-  kv_cache_dtype: auto
-  
-  # 最大シーケンス数（同時処理可能なリクエスト数）
-  max_num_seqs: 256
-  
-  # シード（再現性のため）
-  seed: null
-
-# =============================================================================
-# サンプリング設定（デフォルト値）
+# サンプリング設定
 # =============================================================================
 sampling:
   # 最大生成トークン数
-  max_tokens: 512
+  num_predict: 512
   
   # 温度（0.0で決定論的）
   temperature: 0.7
@@ -73,44 +41,39 @@ sampling:
   # Top-p サンプリング
   top_p: 0.9
   
-  # Top-k サンプリング（0で無効）
-  top_k: 0
+  # Top-k サンプリング
+  top_k: 40
   
   # 繰り返しペナルティ
-  repetition_penalty: 1.1
+  repeat_penalty: 1.1
   
-  # 停止トークン
-  stop_tokens: []
+  # 停止トークン（オプション）
+  stop: []
   
-  # EOS時に停止するか
-  stop_token_ids: []
+  # シード（再現性のため、nullでランダム）
+  seed: null
 
 # =============================================================================
-# サーバー設定（--server オプション使用時）
+# サーバー設定
 # =============================================================================
 server:
-  # ホスト
-  host: "0.0.0.0"
+  # Ollama APIホスト
+  host: localhost
   
-  # ポート
-  port: 8000
+  # Ollama APIポート
+  port: 11434
   
-  # APIキー（nullで無効）
-  api_key: null
-  
-  # OpenAI互換API
-  openai_api: true
-  
-  # チャットテンプレート（nullでモデルのデフォルト）
-  chat_template: null
+  # タイムアウト（秒）
+  timeout: 300
 
 # =============================================================================
-# プロンプト設定（インタラクティブモード用）
+# プロンプト設定
 # =============================================================================
 prompt:
   # プロンプトテンプレート
-  # 利用可能: "alpaca", "chatml", "llama3", "raw"
-  template: alpaca
+  # 利用可能: "alpaca", "chatml", "llama3", "raw", "none"
+  # "none": テンプレートなし（Ollamaのデフォルトを使用）
+  template: none
   
-  # システムプロンプト（テンプレートがサポートする場合）
+  # システムプロンプト
   system_prompt: "You are a helpful AI assistant."

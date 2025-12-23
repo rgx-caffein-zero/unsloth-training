@@ -169,6 +169,31 @@ output:
   log_file: training.log
 
 # =============================================================================
+# GGUF変換設定（Ollama用）
+# =============================================================================
+gguf:
+  # GGUF変換を有効にするか
+  enabled: false
+  
+  # 量子化タイプ
+  quantization: q4_k_m
+  
+  # GGUF出力ディレクトリ
+  output_dir: null
+  
+  # Ollamaに登録するか
+  register_ollama: true
+  
+  # Ollamaでのモデル名
+  ollama_model_name: null
+  
+  # Modelfile用のシステムプロンプト
+  system_prompt: "You are a helpful AI assistant."
+  
+  # Modelfile用のプロンプトテンプレート
+  template: alpaca
+
+# =============================================================================
 # MLflow設定
 # =============================================================================
 mlflow:

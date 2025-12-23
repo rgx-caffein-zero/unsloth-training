@@ -3,3 +3,6 @@ cache/
 
 # 出力ディレクトリ（LoRAとマージモデル）
 outputs/
+
+# GGUFファイル
+gguf/

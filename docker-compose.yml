@@ -14,8 +14,9 @@ services:
       - TRANSFORMERS_CACHE=/workspace/work/models/cache/huggingface
       # MLflow関連
       - MLFLOW_TRACKING_URI=file:///workspace/work/mlruns
-      # vLLM関連
-      - VLLM_ATTENTION_BACKEND=FLASHINFER
+      # Ollama関連
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_MODELS=/home/unsloth/.ollama/models
     volumes:
       - ./data:/workspace/work/data
       - ./models:/workspace/work/models
@@ -23,10 +24,11 @@ services:
       - ./notebooks:/workspace/work/notebooks
       - ./configs:/workspace/work/configs
       - ./mlruns:/workspace/work/mlruns
+      - ollama_data:/home/unsloth/.ollama
     ports:
       - "8888:8888"    # Jupyter Lab
       - "5000:5000"    # MLflow UI
-      - "8000:8000"    # vLLM API Server
+      - "11434:11434"  # Ollama API
       - "2222:22"      # SSH
     shm_size: '8gb'
     deploy:
@@ -36,3 +38,6 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
+volumes:
+  ollama_data:

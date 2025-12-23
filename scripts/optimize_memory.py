@@ -134,6 +134,7 @@ def main():
     print("  • If OOM occurs, reduce batch_size or max_seq_length in config")
     print("  • Close other GPU applications before training")
     print("  • Check MLflow UI at http://localhost:5000")
+    print("  • Check Ollama models: ollama list")
 
 
 if __name__ == "__main__":

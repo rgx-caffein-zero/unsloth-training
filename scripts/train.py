@@ -1,6 +1,7 @@
 """
 統一学習エントリーポイント
 ファインチューニングと継続事前学習を1つのスクリプトで実行
+学習後のGGUF変換とOllama登録もサポート
 
 使用方法:
     python3 scripts/train.py --config configs/finetune_example.yaml
@@ -237,6 +238,77 @@ def create_trainer_config(config: TrainJobConfig, output_dir: str) -> SFTConfig:
     )
 
 
+def convert_to_gguf(
+    config: TrainJobConfig,
+    merged_dir: str,
+    run_name: str,
+    logger: TrainingLogger,
+    tracker: MLflowTracker
+):
+    """学習済みモデルをGGUF形式に変換"""
+    from convert_to_gguf import convert_and_register
+    
+    logger.section("GGUF Conversion")
+    
+    # GGUF出力ディレクトリの決定
+    if config.gguf.output_dir:
+        gguf_output_dir = config.gguf.output_dir
+    else:
+        gguf_output_dir = os.path.join(
+            config.output.output_dir,
+            config.mlflow.experiment_name,
+            run_name,
+            "gguf"
+        )
+    
+    # Ollamaモデル名の決定
+    ollama_model_name = config.gguf.ollama_model_name
+    if not ollama_model_name:
+        # experiment_name と run_name から生成
+        ollama_model_name = f"{config.mlflow.experiment_name}-{run_name}".lower()
+        # Ollamaモデル名に使えない文字を置換
+        ollama_model_name = ollama_model_name.replace("_", "-").replace(" ", "-")
+    
+    logger.info(f"Converting to GGUF format...")
+    logger.info(f"  Source: {merged_dir}")
+    logger.info(f"  Output: {gguf_output_dir}")
+    logger.info(f"  Quantization: {config.gguf.quantization}")
+    logger.info(f"  Ollama model name: {ollama_model_name}")
+    
+    try:
+        result = convert_and_register(
+            model_path=merged_dir,
+            output_dir=gguf_output_dir,
+            model_name=ollama_model_name,
+            quantization=config.gguf.quantization,
+            system_prompt=config.gguf.system_prompt,
+            template=config.gguf.template,
+            register_ollama=config.gguf.register_ollama,
+            logger=logger
+        )
+        
+        if result["success"]:
+            logger.info("✅ GGUF conversion completed successfully!")
+            
+            # MLflowにGGUF情報をログ
+            tracker.set_tag("gguf.enabled", "true")
+            tracker.set_tag("gguf.quantization", config.gguf.quantization)
+            tracker.set_tag("gguf.path", result.get("gguf_path", ""))
+            if result.get("registered"):
+                tracker.set_tag("ollama.model_name", ollama_model_name)
+            
+            return result
+        else:
+            logger.error("❌ GGUF conversion failed")
+            tracker.set_tag("gguf.error", "conversion_failed")
+            return None
+            
+    except Exception as e:
+        logger.error(f"❌ GGUF conversion error: {e}")
+        tracker.set_tag("gguf.error", str(e)[:500])
+        return None
+
+
 def train(
     config: TrainJobConfig,
     logger: TrainingLogger,
@@ -334,6 +406,15 @@ def train(
         # 設定ファイルをMLflowにログ
         tracker.log_artifact(config_save_path)
         
+        # GGUF変換（有効な場合）
+        if config.gguf.enabled and config.output.save_merged_model:
+            # メモリ解放
+            del model
+            del tokenizer
+            cleanup_memory()
+            
+            convert_to_gguf(config, merged_dir, run_name, logger, tracker)
+        
         return True
         
     except torch.cuda.OutOfMemoryError as e:
@@ -363,6 +444,9 @@ Examples:
   
   # With auto GPU optimization
   python3 scripts/train.py --config configs/finetune_example.yaml --auto-optimize
+  
+  # With GGUF conversion (enable in config or use --convert-gguf)
+  python3 scripts/train.py --config configs/finetune_example.yaml --convert-gguf
         """
     )
     parser.add_argument(
@@ -381,11 +465,28 @@ Examples:
         action="store_true",
         help="Validate configuration without running training"
     )
+    parser.add_argument(
+        "--convert-gguf",
+        action="store_true",
+        help="Convert trained model to GGUF format for Ollama"
+    )
+    parser.add_argument(
+        "--gguf-quantization",
+        type=str,
+        default=None,
+        help="Override GGUF quantization type (e.g., q4_k_m, q8_0)"
+    )
     args = parser.parse_args()
     
     # 設定ファイルの読み込み
     print(f"Loading configuration from: {args.config}")
     config = load_config(args.config)
+    
+    # コマンドライン引数で設定を上書き
+    if args.convert_gguf:
+        config.gguf.enabled = True
+    if args.gguf_quantization:
+        config.gguf.quantization = args.gguf_quantization
     
     # 設定の検証
     errors = validate_config(config)
@@ -419,6 +520,10 @@ Examples:
         print(f"Epochs: {config.training.num_train_epochs}")
         print(f"Learning Rate: {config.training.learning_rate}")
         print(f"MLflow Enabled: {config.mlflow.enabled}")
+        print(f"GGUF Conversion: {config.gguf.enabled}")
+        if config.gguf.enabled:
+            print(f"  Quantization: {config.gguf.quantization}")
+            print(f"  Register Ollama: {config.gguf.register_ollama}")
         print("\nConfiguration is valid. Remove --dry-run to start training.")
         sys.exit(0)
     
